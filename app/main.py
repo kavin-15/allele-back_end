@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+import json
+import os
 
 app = FastAPI()
 
@@ -10,21 +13,19 @@ app.add_middleware(
     allow_methods = ["*"],
     allow_headers=["*"],
 )
-@app.get("/")
-def root():
-    return {"message": "Allele backend is running."}
 
-@app.get("/heatmap-data")
-def get_heatmap_data():
+with open("filtered_alcohol_heatmap_all_combined (1).json") as f:
+    all_data = json.load(f)
+
+with open("filtered_alcohol_heatmap_by_continent (1).json") as f:
+    continent_data = json.load(f)
+@app.get("/alcohol-consumption-heatmap")
+def get_heatmap(continent: Optional[str] = Query('All')):
+    if continent == "All":
+        return{"type": "multi", "data": all_data}
+    if continent in continent_data:
+        return {"type":"single","continent": continent, "data": continent_data[continent]}
     return{
-        "xLabels":["SNP_A","SNP_B","SNP_C","SNP_D"],
-        "yLabels":["Sample1","Sample2","Sample3"],
-        "data":[
-            [0,1,2,1],
-            [1,0,2,0],
-            [2,1,0,1]
-        ]
+        "error":f"continent '{continent}' not found",
+        "available": list(continent_data.keys()) + ["All"]
     }
-@app.get("/test")
-def test():
-    return{"status":"Backend working perfectly"}
